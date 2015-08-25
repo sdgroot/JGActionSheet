@@ -65,16 +65,12 @@ typedef NS_ENUM(NSUInteger, JGActionSheetArrowDirection) {
  */
 @property (nonatomic, strong, readonly) UIView *contentView;
 
-
-/**
- Returns a standard cancel section. The button title is "Cancel" (localized string), and the button style is the cancel button style.
-*/
-+ (instancetype)cancelSection;
+@property (nonatomic, assign, readonly) UIEdgeInsets contentInsets;
 
 /**
  Convenience initializer for the @c initWithTitle:message:buttonTitles:buttonStyle: initializer.
  */
-+ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle;
++ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle contentInsets:(UIEdgeInsets)insets;
 
 /**
  Initializes the section with buttons.
@@ -83,12 +79,12 @@ typedef NS_ENUM(NSUInteger, JGActionSheetArrowDirection) {
  @param buttonTitles The titles for the buttons in the section.
  @param buttonStyle The style to apply to the buttons. This can be altered later with the @c setButtonStyle:forButtonAtIndex: method
  */
-- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle;
+- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle contentInsets:(UIEdgeInsets)insets;
 
 /**
  Convenience initializer for the @c initWithTitle:message:contentView: method.
  */
-+ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView;
++ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView contentInsets:(UIEdgeInsets)insets;
 
 /**
  Initializes the section with a custom content view.
@@ -96,7 +92,7 @@ typedef NS_ENUM(NSUInteger, JGActionSheetArrowDirection) {
  @param message The message of the section. (Optional)
  @param contentView The custom content view to display in the section.
  */
-- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView;
+- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView contentInsets:(UIEdgeInsets)insets;
 
 /**
  Sets the button style for a specific button.
@@ -104,6 +100,7 @@ typedef NS_ENUM(NSUInteger, JGActionSheetArrowDirection) {
  @Warning If the section does not have any buttons or @c index exceeds the number of buttons an exception is thrown.
  */
 - (void)setButtonStyle:(JGActionSheetButtonStyle)buttonStyle forButtonAtIndex:(NSUInteger)index;
+- (void)setButtonFont:(UIFont *)font backgroundColor:(UIColor *)backgroundColor titleColor:(UIColor *)titleColor borderColor:(UIColor *)borderColor forButtonAtIndex:(NSUInteger)index;
 
 @end
 
@@ -247,5 +244,8 @@ typedef NS_ENUM(NSUInteger, JGActionSheetArrowDirection) {
  @param animated Whether the action sheet should be dismissed with an animation.
  */
 - (void)dismissAnimated:(BOOL)animated;
+
+- (void)setTitleText:(NSString *)titleText forSectionAtIndex:(NSUInteger)sectionIndex;
+- (void)setMessageText:(NSString *)messageText forSectionAtIndex:(NSUInteger)sectionIndex;
 
 @end

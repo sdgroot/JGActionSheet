@@ -47,7 +47,7 @@
 #define iPad (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
 #endif
 
-#define kHostsCornerRadius 3.0f
+#define kHostsCornerRadius 8.0f
 
 #define kSpacing 5.0f
 
@@ -63,16 +63,6 @@
 #define kAnimationDurationForSectionCount(count) MAX(0.22f, MIN(count*0.12f, 0.45f))
 
 #pragma mark - Helpers
-
-@interface JGButton : UIButton
-
-@property (nonatomic, assign) NSUInteger row;
-
-@end
-
-@implementation JGButton
-
-@end
 
 NS_INLINE UIBezierPath *trianglePath(CGRect rect, JGActionSheetArrowDirection arrowDirection, BOOL closePath) {
     UIBezierPath *path = [UIBezierPath bezierPath];
@@ -188,9 +178,8 @@ static BOOL disableCustomEasing = NO;
 
 @interface JGActionSheetSection ()
 
-@property (nonatomic, assign) NSUInteger index;
-
 @property (nonatomic, copy) void (^buttonPressedBlock)(NSIndexPath *indexPath);
+@property (nonatomic, assign, readwrite) UIEdgeInsets contentInsets;
 
 - (void)setUpForContinuous:(BOOL)continuous;
 
@@ -200,19 +189,15 @@ static BOOL disableCustomEasing = NO;
 
 #pragma mark Initializers
 
-+ (instancetype)cancelSection {
-    return [self sectionWithTitle:nil message:nil buttonTitles:@[NSLocalizedString(@"Cancel",)] buttonStyle:JGActionSheetButtonStyleCancel];
++ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle contentInsets:(UIEdgeInsets)insets {
+    return [[self alloc] initWithTitle:title message:message buttonTitles:buttonTitles buttonStyle:buttonStyle contentInsets:insets];
 }
 
-+ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle {
-    return [[self alloc] initWithTitle:title message:message buttonTitles:buttonTitles buttonStyle:buttonStyle];
-}
-
-- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle {
+- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message buttonTitles:(NSArray *)buttonTitles buttonStyle:(JGActionSheetButtonStyle)buttonStyle contentInsets:(UIEdgeInsets)insets {
     self = [super init];
     
     if (self) {
-        if (title) {
+//        if (title) {
             UILabel *titleLabel = [[UILabel alloc] init];
             titleLabel.backgroundColor = [UIColor clearColor];
             titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -225,9 +210,9 @@ static BOOL disableCustomEasing = NO;
             _titleLabel = titleLabel;
             
             [self addSubview:_titleLabel];
-        }
-        
-        if (message) {
+//        }
+		
+//        if (message) {
             UILabel *messageLabel = [[UILabel alloc] init];
             messageLabel.backgroundColor = [UIColor clearColor];
             messageLabel.textAlignment = NSTextAlignmentCenter;
@@ -240,16 +225,16 @@ static BOOL disableCustomEasing = NO;
             _messageLabel = messageLabel;
             
             [self addSubview:_messageLabel];
-        }
-        
+//        }
+		
         if (buttonTitles.count) {
             NSMutableArray *buttons = [NSMutableArray arrayWithCapacity:buttonTitles.count];
             
             NSInteger index = 0;
             
             for (NSString *str in buttonTitles) {
-                JGButton *b = [self makeButtonWithTitle:str style:buttonStyle];
-                b.row = (NSUInteger)index;
+                UIButton *b = [self makeButtonWithTitle:str style:buttonStyle];
+                b.tag = index;
                 
                 [self addSubview:b];
                 
@@ -260,20 +245,25 @@ static BOOL disableCustomEasing = NO;
             
             _buttons = buttons.copy;
         }
+		
+		self.layer.masksToBounds = YES;
+		self.clipsToBounds = YES;
+		
+		_contentInsets = insets;
     }
     
     return self;
 }
 
-+ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView {
-    return [[self alloc] initWithTitle:title message:message contentView:contentView];
++ (instancetype)sectionWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView contentInsets:(UIEdgeInsets)insets {
+    return [[self alloc] initWithTitle:title message:message contentView:contentView contentInsets:insets];
 }
 
-- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView {
+- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message contentView:(UIView *)contentView contentInsets:(UIEdgeInsets)insets {
     self = [super init];
     
     if (self) {
-        if (title) {
+//        if (title) {
             UILabel *titleLabel = [[UILabel alloc] init];
             titleLabel.backgroundColor = [UIColor clearColor];
             titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -286,9 +276,9 @@ static BOOL disableCustomEasing = NO;
             _titleLabel = titleLabel;
             
             [self addSubview:_titleLabel];
-        }
-        
-        if (message) {
+//        }
+		
+//        if (message) {
             UILabel *messageLabel = [[UILabel alloc] init];
             messageLabel.backgroundColor = [UIColor clearColor];
             messageLabel.textAlignment = NSTextAlignmentCenter;
@@ -301,9 +291,13 @@ static BOOL disableCustomEasing = NO;
             _messageLabel = messageLabel;
             
             [self addSubview:_messageLabel];
-        }
-        
+//        }
+		
         _contentView = contentView;
+		_contentInsets = insets;
+		
+		self.layer.masksToBounds = YES;
+		self.clipsToBounds = YES;
         
         [self addSubview:self.contentView];
     }
@@ -330,7 +324,8 @@ static BOOL disableCustomEasing = NO;
     }
 }
 
-- (void)setButtonStyle:(JGActionSheetButtonStyle)buttonStyle forButtonAtIndex:(NSUInteger)index {
+- (void)setButtonStyle:(JGActionSheetButtonStyle)buttonStyle forButtonAtIndex:(NSUInteger)index
+{
     if (index < self.buttons.count) {
         UIButton *button = self.buttons[index];
         
@@ -340,6 +335,18 @@ static BOOL disableCustomEasing = NO;
         NSLog(@"ERROR: Index out of bounds");
         return;
     }
+}
+
+- (void)setButtonFont:(UIFont *)font backgroundColor:(UIColor *)backgroundColor titleColor:(UIColor *)titleColor borderColor:(UIColor *)borderColor forButtonAtIndex:(NSUInteger)index
+{
+	if (index < self.buttons.count )
+	{
+		UIButton *button = self.buttons[index];
+		[self setButtonFont:font backgroundColor:backgroundColor titleColor:titleColor borderColor:borderColor forButton:button];
+	}
+	else {
+		NSLog(@"ERROR: Index out of bounds");
+	}
 }
 
 - (UIImage *)pixelImageWithColor:(UIColor *)color {
@@ -356,7 +363,8 @@ static BOOL disableCustomEasing = NO;
     return [img resizableImageWithCapInsets:UIEdgeInsetsZero];
 }
 
-- (void)setButtonStyle:(JGActionSheetButtonStyle)buttonStyle forButton:(UIButton *)button {
+- (void)setButtonStyle:(JGActionSheetButtonStyle)buttonStyle forButton:(UIButton *)button
+{
     UIColor *backgroundColor, *borderColor, *titleColor = nil;
     UIFont *font = nil;
     
@@ -406,8 +414,36 @@ static BOOL disableCustomEasing = NO;
     button.layer.borderColor = borderColor.CGColor;
 }
 
-- (JGButton *)makeButtonWithTitle:(NSString *)title style:(JGActionSheetButtonStyle)style {
-    JGButton *b = [[JGButton alloc] init];
+- (void)setButtonFont:(UIFont *)font backgroundColor:(UIColor *)backgroundColor titleColor:(UIColor *)titleColor borderColor:(UIColor *)borderColor forButton:(UIButton *)button
+{
+	if ( !font ) {
+		font = [UIFont systemFontOfSize:15.0f];
+	}
+	
+	if ( !titleColor ) {
+		titleColor = [UIColor blackColor];
+	}
+	
+	if ( !backgroundColor ) {
+		backgroundColor = [UIColor colorWithWhite:0.95f alpha:1.0f];
+	}
+	
+	if ( !borderColor ) {
+		borderColor = [UIColor colorWithWhite:0.9f alpha:1.0f];
+	}
+	
+	[button setTitleColor:titleColor forState:UIControlStateNormal];
+	
+	button.titleLabel.font = font;
+	
+	[button setBackgroundImage:[self pixelImageWithColor:backgroundColor] forState:UIControlStateNormal];
+	[button setBackgroundImage:[self pixelImageWithColor:borderColor] forState:UIControlStateHighlighted];
+	
+	button.layer.borderColor = borderColor.CGColor;
+}
+
+- (UIButton *)makeButtonWithTitle:(NSString *)title style:(JGActionSheetButtonStyle)style {
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
     
     b.layer.cornerRadius = 2.0f;
     b.layer.masksToBounds = YES;
@@ -422,69 +458,73 @@ static BOOL disableCustomEasing = NO;
     return b;
 }
 
-- (void)buttonPressed:(JGButton *)button {
+- (void)buttonPressed:(UIButton *)button {
     if (self.buttonPressedBlock) {
-        self.buttonPressedBlock([NSIndexPath indexPathForRow:(NSInteger)button.row inSection:(NSInteger)self.index]);
+        self.buttonPressedBlock([NSIndexPath indexPathForRow:button.tag inSection:self.tag]);
     }
 }
 
-- (CGRect)layoutForWidth:(CGFloat)width {
+- (CGRect)layoutForWidth:(CGFloat)width
+{
     CGFloat buttonHeight = 40.0f;
-    CGFloat spacing = kSpacing;
+    CGFloat height = 0.0;
+	CGFloat labelHeight = 0.0;
+	CGFloat contentWidth = width - (self.contentInsets.left + self.contentInsets.right);
     
-    CGFloat height = 0.0f;
-    
-    if (self.titleLabel) {
-        height += spacing;
-        
-        [self.titleLabel sizeToFit];
-        height += CGRectGetHeight(self.titleLabel.frame);
-        
-        self.titleLabel.frame = (CGRect){{spacing, spacing}, {width-spacing*2.0f, CGRectGetHeight(self.titleLabel.frame)}};
+    if (self.titleLabel)
+	{
+		[self.titleLabel sizeToFit];
+		labelHeight = CGRectGetHeight( self.titleLabel.frame );
+		self.titleLabel.frame = (CGRect){{self.contentInsets.left, (labelHeight > 0 ? self.contentInsets.top : 0)}, {contentWidth, CGRectGetHeight(self.titleLabel.frame)}};
+		height = CGRectGetMaxY( self.titleLabel.frame );
     }
-    
-    if (self.messageLabel) {
-        height += spacing;
-        
-        CGSize maxLabelSize = {width-spacing*2.0f, width};
+	
+    if (self.messageLabel)
+	{
+        CGSize maxLabelSize = {contentWidth, width};
         
         CGFloat messageLabelHeight = 0.0f;
         
-        if (iOS7) {
+        if ( iOS7 )
+		{
             NSDictionary *attributes = @{NSFontAttributeName : self.messageLabel.font};
-            
-            messageLabelHeight = CGRectGetHeight([self.messageLabel.text boundingRectWithSize:maxLabelSize options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil]);
+            messageLabelHeight = round(CGRectGetHeight([self.messageLabel.text boundingRectWithSize:maxLabelSize options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes context:nil]));
         }
-        else {
+        else
+		{
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            messageLabelHeight = [self.messageLabel.text sizeWithFont:self.messageLabel.font constrainedToSize:maxLabelSize lineBreakMode:self.messageLabel.lineBreakMode].height;
+            messageLabelHeight = round([self.messageLabel.text sizeWithFont:self.messageLabel.font constrainedToSize:maxLabelSize lineBreakMode:self.messageLabel.lineBreakMode].height);
 #pragma clang diagnostic pop
         }
-        
-        self.messageLabel.frame = (CGRect){{spacing, height}, {width-spacing*2.0f, messageLabelHeight}};
-        
-        height += messageLabelHeight;
+		
+		if ( messageLabelHeight > 0 ) {
+			height += (height > 0 ? kSpacing : self.contentInsets.top);
+		}
+		
+        self.messageLabel.frame = (CGRect){{self.contentInsets.left, height}, {contentWidth, messageLabelHeight}};
+		
+		height = CGRectGetMaxY( self.messageLabel.frame );
     }
-    
-    for (UIButton *button in self.buttons) {
-        height += spacing;
-        
-        button.frame = (CGRect){{spacing, height}, {width-spacing*2.0f, buttonHeight}};
-        
-        height += buttonHeight;
+	
+    for ( UIButton *button in self.buttons )
+	{
+        height += (height > 0 ? kSpacing : self.contentInsets.top);
+        button.frame = (CGRect){{self.contentInsets.left, height}, {contentWidth, buttonHeight}};
+        height = CGRectGetMaxY( button.frame );
     }
-    
-    if (self.contentView) {
-        height += spacing;
-        
-        self.contentView.frame = (CGRect){{spacing, height}, {width-spacing*2.0f, self.contentView.frame.size.height}};
-        
+	
+    if ( self.contentView )
+	{
+        height += (height > 0 ? kSpacing : self.contentInsets.top);
+        self.contentView.frame = (CGRect){{self.contentInsets.left, height}, {contentWidth, self.contentView.frame.size.height}};
         height += CGRectGetHeight(self.contentView.frame);
     }
-    
-    height += spacing;
-    
+	
+	if ( height > 0 ) {
+		height += self.contentInsets.bottom;
+	}
+	
     self.frame = (CGRect){CGPointZero, {width, height}};
     
     return self.frame;
@@ -493,6 +533,12 @@ static BOOL disableCustomEasing = NO;
 @end
 
 #pragma mark - JGActionSheet
+
+@interface JGActionSheet (Internal)
+
+- (void)layoutSheetInitial:(BOOL)initial;
+
+@end
 
 @interface JGActionSheet () <UIGestureRecognizerDelegate> {
     UIScrollView *_scrollView;
@@ -555,7 +601,7 @@ static BOOL disableCustomEasing = NO;
         };
         
         for (JGActionSheetSection *section in self.sections) {
-            section.index = index;
+            section.tag = index;
             
             [_scrollView addSubview:section];
             
@@ -746,7 +792,7 @@ static BOOL disableCustomEasing = NO;
         }
     };
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged) name:UIApplicationDidChangeStatusBarFrameNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged) name:UIDeviceOrientationDidChangeNotification object:nil];
     
     [self layoutForVisible:!animated];
     
@@ -815,7 +861,7 @@ static BOOL disableCustomEasing = NO;
         }
     };
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged) name:UIApplicationDidChangeStatusBarFrameNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(orientationChanged) name:UIDeviceOrientationDidChangeNotification object:nil];
     
     [self layoutForVisible:!animated];
     
@@ -887,7 +933,7 @@ static BOOL disableCustomEasing = NO;
         _scrollViewHost.backgroundColor = [UIColor whiteColor];
         
         _scrollViewHost.layer.cornerRadius = kHostsCornerRadius;
-        
+		_scrollViewHost.layer.masksToBounds = YES;
         _scrollViewHost.layer.shadowColor = [UIColor blackColor].CGColor;
         _scrollViewHost.layer.shadowOffset = CGSizeZero;
         _scrollViewHost.layer.shadowRadius = kShadowRadius;
@@ -973,6 +1019,38 @@ static BOOL disableCustomEasing = NO;
     }
     
     _scrollViewHost.frame = finalFrame;
+}
+
+- (void)setTitleText:(NSString *)titleText forSectionAtIndex:(NSUInteger)sectionIndex
+{
+	if ( sectionIndex < [self.sections count] )
+	{
+		JGActionSheetSection *section = self.sections[ sectionIndex ];
+		section.titleLabel.text = titleText;
+		
+		if (_anchoredAtPoint) {
+			[self moveToPoint:_anchorPoint arrowDirection:_anchoredArrowDirection animated:[self isVisible]];
+		}
+		else {
+			[self layoutSheetInitial:NO];
+		}
+	}
+}
+
+- (void)setMessageText:(NSString *)messageText forSectionAtIndex:(NSUInteger)sectionIndex
+{
+	if ( sectionIndex < [self.sections count] )
+	{
+		JGActionSheetSection *section = self.sections[ sectionIndex ];
+		section.messageLabel.text = messageText;
+		
+		if (_anchoredAtPoint) {
+			[self moveToPoint:_anchorPoint arrowDirection:_anchoredArrowDirection animated:[self isVisible]];
+		}
+		else {
+			[self layoutSheetInitial:NO];
+		}
+	}
 }
 
 #pragma mark Dismissal
